@@ -12,7 +12,6 @@ from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
                           QThreadPool, pyqtSignal, pyqtSlot)
 import configparser
 import traceback, sys
-import subprocess
 import os
 
 class Ui_MainWindow(QObject):
@@ -88,9 +87,21 @@ class Ui_MainWindow(QObject):
         self.retranslateUi(MainWindow)
         self.stackedWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
-        MainWindow.setWindowIcon(QtGui.QIcon("build.bin"))
+
+        photo = self.resource_path("photo.png")
+        MainWindow.setWindowIcon(QtGui.QIcon(photo))
 
         self.setupConnections()
+
+    def resource_path(self, relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+
+        return os.path.join(base_path, relative_path)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
