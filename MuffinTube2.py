@@ -105,7 +105,7 @@ class Ui_MainWindow(QObject):
     def setupConnections(self):
         self.audioRadiobutton.clicked.connect(self.save)                #Audio option (saving)
         self.saveSettings.clicked.connect(self.save)                    #Saving settings (saving)
-        self.saveSettings.clicked.connect(self.changepage)              #Saving settings (Changing page)
+        #self.saveSettings.clicked.connect(self.changepage)              #Saving settings (Changing page)
         self.settingsOpen.clicked.connect(self.changepage)              #Opening settings
         self.audioFolderOpen.clicked.connect(self.openAudioFolder)
         self.URLinput.returnPressed.connect(self.convertAction)         #URL pressed enter
@@ -118,18 +118,26 @@ class Ui_MainWindow(QObject):
 
     def changepage(self):
         self.stackedWidget.setCurrentIndex((self.stackedWidget.currentIndex() + 1) % 2)
+        self.audioDownloadLocation.setPlaceholderText(
+            self.audioDownloadLocation.text())
 
     def save(self):
         try:
-            config = configparser.ConfigParser() #use config[].getboolean()
-            config['Main'] = {
-                'Audio directory':self.audioDownloadLocation.text()
+            if os.path.isdir(self.audioDownloadLocation.text()):
+                config = configparser.ConfigParser() #use config[].getboolean()
+                config['Main'] = {
+                    'Audio directory':self.audioDownloadLocation.text()
                               }
-            with open(os.getcwd() + "\\" + 'config.ini', 'w') as configfile:
-                config.write(configfile)
+                with open(os.getcwd() + "\\" + 'config.ini', 'w') as configfile:
+                    config.write(configfile)
+                self.changepage()
+                self.URLinput.setFocus()
+            else:
+                self.audioDownloadLocation.clear()
+                self.audioDownloadLocation.setPlaceholderText("Invalid directory")
         except:
             traceback.print_exc()
-        self.URLinput.setFocus()
+        
         
     def loadSettings(self):
         try:
@@ -140,19 +148,27 @@ class Ui_MainWindow(QObject):
             print("First time running, making config file...")
             self.save()
 
+    def checkURL(self):
+        url = self.URLinput.text()
+        if "youtube.com" in url or "youtu.be" in url:
+            return True
+        return False
+
     def openAudioFolder(self):
         subprocess.call("explorer " + self.audioDownloadLocation.text(), shell=True)
 
     def convertAction(self):
-        #self.thread = QThread()
-        job = ConvertingClass(self.URLinput.text(), self.audioDownloadLocation.text())
-        #job.moveToThread(self.thread)
-        #self.thread.started.connect(job.long_run)
-        job.log.connect(self.appendStatus)
-        job.start()
-        self.threads += [job]
+        if self.checkURL():
+            self.plainTextEdit.appendPlainText("Valid URL, starting download...")
+            job = ConvertingClass(self.URLinput.text(), self.audioDownloadLocation.text())
+            job.log.connect(self.appendStatus)
+            job.start()
+            self.threads += [job]
+            print("Thread started")
+        else:
+            self.plainTextEdit.appendPlainText("Invalid URL")
         self.URLinput.clear()
-        print("Thread started")
+        
 
     def addLyrics(self):
         self.lyrics = ["Light up the sky-y-y-y",
