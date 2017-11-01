@@ -1,14 +1,10 @@
 from __future__ import unicode_literals
 import sys
-import subprocess
-import threading
 import shutil
 import urllib.request
 from mutagen.mp3 import MP3 as MP3 #tagging AND writing MP3
 from mutagen.id3 import ID3, APIC, TIT2, error
 import os
-from os import listdir
-from os.path import isfile, join
 from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
                           QThreadPool, pyqtSignal, pyqtSlot)
 import youtube_dl
@@ -21,16 +17,18 @@ class thumbnailGetter:
     def stripURL(self):
         start_index = self.url.find("v")
         end_index = self.url.find("&")
-        if "&" in self.url:
+        if "&" in self.url:                                     #For playlists
             self.videoID = self.url[start_index + 2:end_index]
-        else:
-            self.videoID = self.url[start_index + 2:] #For single videos
+        elif "youtu.be/" in self.url:                           #For shortened URLs
+            start_index = self.url.find(".be/")
+            self.videoID = self.url[start_index + 4:]
+        else:                                                   #For single videos
+            self.videoID = self.url[start_index + 2:] 
 
     def saveThumbnail(self):
         thumbnail_url = 'http://img.youtube.com/vi/' + self.videoID + '/maxresdefault.jpg'
         thumbnail_url2 = 'http://img.youtube.com/vi/' + self.videoID + '/0.jpg'
         file_name = self.videoID + '.jpg'
-        #print(thumbnail_url + '\n' + thumbnail_url2)
         try:
             urllib.request.urlretrieve(thumbnail_url, file_name)
             print("Thumbnail acquired")
@@ -39,7 +37,7 @@ class thumbnailGetter:
 
 
 
-class ConvertingClass(QThread): #                    'write_all_thumbnails' : False,
+class ConvertingClass(QThread):
     log = pyqtSignal(str)
     
     def __init__(self, url, path):
@@ -90,13 +88,20 @@ class ConvertingClass(QThread): #                    'write_all_thumbnails' : Fa
         with youtube_dl.YoutubeDL(self.ydl_opts) as ydl:
             ydl.download([self.url])
             
-        self.filename_path = os.getcwd() + "\\" + self.title + "-" + self.tg.videoID + ".mp3" #these two variables are the full path to them files
-        print(self.title, "title", self.tg.videoID, "ID")
+        self.filename_path = os.getcwd() + "\\" + \
+                             self.title + "-" + \
+                             self.tg.videoID + ".mp3" #these two variables are the full path to them files
         self.filename_path_pic = os.getcwd() + "\\" + self.tg.videoID + ".jpg"
 
-        self.embedTags()
+        try:
+            self.embedTags()
+        except Exception as e: #Make specific errors
+            self.log.emit("[WARNING] Failed to embed tags")
+            self.log.emit(e)
+            
         self.cleanMove()
-        self.log.emit("Finished\n\n")
+        self.log.emit("Finished")
+        self.log.emit("=" * 30)
 
     def my_hook(self, d):
         if d['status'] == 'finished':
@@ -108,7 +113,7 @@ class ConvertingClass(QThread): #                    'write_all_thumbnails' : Fa
         audio = MP3(self.filename_path, ID3=ID3) #opening the converted file for tagging
         try:
            audio.add_tags()
-        except error as e:
+        except Exception as e:
            print(e)
         audio.tags.add(
            APIC(                                    #writes cover art
