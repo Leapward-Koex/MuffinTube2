@@ -13,6 +13,7 @@ from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
 import configparser
 import traceback, sys
 import os
+import subprocess
 
 class Ui_MainWindow(QObject):
     def setupUi(self, MainWindow):
