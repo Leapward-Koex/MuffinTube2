@@ -5,6 +5,7 @@
 # Created by: PyQt5 UI code generator 5.7
 #
 # WARNING! All changes made in this file will be lost!
+import json
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from convertingclass import ConvertingClass
@@ -14,8 +15,13 @@ import configparser
 import traceback, sys
 import os
 import subprocess
+import requests
+import webbrowser
 
-class Ui_MainWindow(QObject):
+currentVersion = 160
+
+
+class Ui_MainWindow(QtWidgets.QMainWindow):
     def setupUi(self, MainWindow):
         #Main window
         MainWindow.setObjectName("MainWindow")
@@ -166,6 +172,23 @@ class Ui_MainWindow(QObject):
             return True
         return False
 
+    def checkVersion(self):
+        contents = requests.get("https://api.github.com/repos/Leapward-Koex/MuffinTube2/releases").json() #Json obj of version
+        #contents = json.loads(contents)
+        releaseVersion = contents[0]["tag_name"][1:]
+        releaseVersion = int(releaseVersion.replace('.', ""))
+        if releaseVersion > currentVersion:
+            msg = QtWidgets.QMessageBox()
+            msg.setIcon(QtWidgets.QMessageBox.Question)
+            msg.setWindowTitle("New version available")
+            msg.setText("Do you want to download the new version?")
+            msg.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+            retval = msg.exec_()
+
+            if retval == QtWidgets.QMessageBox.Yes:
+                newReleaseUrl = "https://github.com/Leapward-Koex/MuffinTube2/releases/tag/v" + contents[0]["tag_name"][1:]
+                webbrowser.open_new_tab(newReleaseUrl)
+
     def openAudioFolder(self):
         subprocess.call("explorer " + self.audioDownloadLocation.text(), shell=True)
 
@@ -288,6 +311,7 @@ if __name__ == "__main__":
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
     MainWindow.show()
+    ui.checkVersion()
     sys.exit(app.exec_())
 
 

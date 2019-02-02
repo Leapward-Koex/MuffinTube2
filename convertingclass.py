@@ -9,6 +9,7 @@ from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
                           QThreadPool, pyqtSignal, pyqtSlot)
 import youtube_dl
 
+
 class thumbnailGetter:
     def __init__(self, url):
         self.url = url
@@ -34,7 +35,6 @@ class thumbnailGetter:
             print("Thumbnail acquired")
         except:
             urllib.request.urlretrieve(thumbnail_url2, file_name)
-
 
 
 class ConvertingClass(QThread):
@@ -130,6 +130,3 @@ class ConvertingClass(QThread):
     def cleanMove(self):
         os.remove(self.filename_path_pic)
         shutil.move(self.filename_path, self.dest_path + self.title + ".mp3")
-
-
-
